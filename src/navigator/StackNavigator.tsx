@@ -9,6 +9,7 @@ import { View } from 'react-native';
 import { ActivityIndicator } from 'react-native-paper';
 import { styles } from '../theme/styles';
 import { MainScreen } from '../screens/mainScreen/MainScreen';
+import { AdminScreen } from '../screens/AdminScreen/AdminScreen';
 
 
 const Stack = createStackNavigator();
@@ -26,6 +27,7 @@ const routes: Routes[] = [
     { name: "Login", screen: LoginScreen },
     { name: "Register", screen: RegisterScreen },
     { name: "Home", screen: HomeScreen },
+    { name: "Admin", screen: AdminScreen },
 
 ];
 

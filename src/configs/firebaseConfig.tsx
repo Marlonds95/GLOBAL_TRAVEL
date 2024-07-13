@@ -1,11 +1,9 @@
-// Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
 import { initializeAuth, getReactNativePersistence } from "firebase/auth";
 import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage';
+import { getFirestore } from 'firebase/firestore';
+import { getStorage } from 'firebase/storage';
 import { getDatabase } from 'firebase/database';
-
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -20,10 +18,17 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const firebase = initializeApp(firebaseConfig);
-//export const auth = getAuth(firebase);
+
+// Initialize Auth
 export const auth = initializeAuth(firebase, {
   persistence: getReactNativePersistence(ReactNativeAsyncStorage)
 });
 
-//Referencia al servicio de BDD
+// Initialize Firestore
+export const firestore = getFirestore(firebase);
+
+// Initialize Storage
+export const storage = getStorage(firebase);
+
+// Initialize Realtime Database
 export const dbRealTime = getDatabase(firebase);

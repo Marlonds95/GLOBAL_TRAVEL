@@ -73,6 +73,7 @@ export const styles = StyleSheet.create({
     },
     container: {
         padding: 16,
+        paddingTop: 40,
     },
     header2: {
         flexDirection: 'row',
@@ -103,24 +104,41 @@ export const styles = StyleSheet.create({
         alignItems: 'center',
     },
     card: {
-        backgroundColor: '#F0F0F0', // Color de fondo de la tarjeta, una mezcla de negro y blanco (gris claro)
+        backgroundColor: '#F0F0F0', 
         marginBottom: 16,
         borderRadius: 8,
     },
     cardContent: {
-        alignItems: 'center', // Centra el contenido de la tarjeta
+        // Centra el contenido de la tarjeta
     },
     cardTitle: {
-        color: '#000000', // Color del texto del título
+        color: '#000000', 
     },
     cardParagraph: {
-        color: '#000000', // Color del texto del párrafo
+        color: '#000000', 
     },
     cardImage: {
         marginTop: 16,
         width: '100%',
         height: 200,
-        resizeMode: 'contain', // Ajustar la imagen dentro del contenedor
+        resizeMode: 'contain', 
+    },
+    input: {
+        borderWidth: 1,
+        borderColor: '#000',
+        padding: 10,
+        marginBottom: 12,
+        width: '100%',
+    },
+    imagePreview: {
+        width: '100%',
+        height: 200,
+        marginVertical: 16,
+    },
+    errorText: {
+        color: '#FF0000', 
+        textAlign: 'center',
+        marginVertical: 10,
     },
 
 })
