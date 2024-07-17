@@ -140,5 +140,28 @@ export const styles = StyleSheet.create({
         textAlign: 'center',
         marginVertical: 10,
     },
+    
+    title: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        marginBottom: 15,
+    },
+   
+    modalContent: {
+        padding: 20,
+        backgroundColor: 'white',
+        margin: 20,
+        borderRadius: 10,
+    },
+    image: {
+        width: 100,
+        height: 100,
+        marginBottom: 15,
+    },
+    cartItem: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: 15,
+    }
 
 })

@@ -44,10 +44,6 @@ export const MainScreen = () => {
                     <IconButton icon="account-circle" size={30} />
                     <Text style={styles.loginText}>Inicia Sesión</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.loginButton} onPress={() => navigation.dispatch(CommonActions.navigate({ name: 'Admin' }))}>
-                    <IconButton icon="account-circle" size={30} />
-                    <Text style={styles.loginText}>Editar</Text>
-                </TouchableOpacity>
             </View>
             <View style={styles.body}>
                 {error && <Text style={styles.errorText}>{error}</Text>}

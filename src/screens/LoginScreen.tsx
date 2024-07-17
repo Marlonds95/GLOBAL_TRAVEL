@@ -3,16 +3,17 @@ import { View } from 'react-native';
 import { Button, Snackbar, Text, TextInput } from 'react-native-paper';
 import { styles } from '../theme/styles';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '../configs/firebaseConfig';
+import { auth, firestore } from '../configs/firebaseConfig';
 import { CommonActions, useNavigation } from '@react-navigation/native';
+import { doc, getDoc } from 'firebase/firestore';
 
-//Interface - Formulario inicia sesión
+// Interface - Formulario inicia sesión
 interface FormLogin {
     email: string;
     password: string;
 }
 
-//Interface - Snackbar message
+// Interface - Snackbar message
 interface MessageSnackBar {
     visible: boolean;
     message: string;
@@ -20,34 +21,25 @@ interface MessageSnackBar {
 }
 
 export const LoginScreen = () => {
-
-    //hook useState: cambiar el estado del formulario
     const [formLogin, setFormLogin] = useState<FormLogin>({
         email: '',
         password: ''
-    })
+    });
 
-    //hook useState: visualizar u ocultar el mensaje
     const [showMessage, setShowMessage] = useState<MessageSnackBar>({
         visible: false,
         message: '',
         color: '#fff'
     });
 
-    //hook useState: visualizar la contraseña
     const [hiddenPassword, setHiddenPassword] = useState<boolean>(true);
-
-    //hooh useNavigation: navegar entres screens
     const navigation = useNavigation();
 
-    //Función cambiar los datos del formulario
     const handlerSetValues = (key: string, value: string) => {
-        setFormLogin({ ...formLogin, [key]: value })
-    }
+        setFormLogin({ ...formLogin, [key]: value });
+    };
 
-    //Función enviar - consultar el usuario
     const handlerFormLogin = async () => {
-        //Validar los datos en el formulario
         if (!formLogin.email || !formLogin.password) {
             setShowMessage({
                 visible: true,
@@ -56,26 +48,32 @@ export const LoginScreen = () => {
             });
             return;
         }
-        //console.log(formLogin);
+
         try {
             const response = await signInWithEmailAndPassword(
                 auth,
                 formLogin.email,
                 formLogin.password
             );
-            //console.log(response);
-            navigation.dispatch(CommonActions.navigate({ name: 'Home' }));
-        }
-        catch (ex) {
+
+            // Verificar el rol del usuario en Firestore
+            const userDoc = await getDoc(doc(firestore, 'users', response.user.uid));
+            const userData = userDoc.data();
+
+            if (userData?.role === 'admin') {
+                navigation.dispatch(CommonActions.navigate({ name: 'Admin' }));
+            } else {
+                navigation.dispatch(CommonActions.navigate({ name: 'Home' }));
+            }
+        } catch (ex) {
             console.log(ex);
             setShowMessage({
                 visible: true,
                 message: 'Usuario y/o contraseña incorrecta!',
                 color: '#8f0e1a'
-            })
-
+            });
         }
-    }
+    };
 
     return (
         <View style={styles.root}>
@@ -111,5 +109,5 @@ export const LoginScreen = () => {
                 {showMessage.message}
             </Snackbar>
         </View>
-    )
-}
+    );
+};
