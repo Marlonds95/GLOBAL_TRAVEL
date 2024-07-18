@@ -48,7 +48,7 @@ export const AdminScreen = () => {
     const [purchases, setPurchases] = useState<Purchase[]>([]);
     const [reservations, setReservations] = useState<Reservation[]>([]);
     const [snackbarVisible, setSnackbarVisible] = useState(false);
-    const [paymentSnackbarVisible, setPaymentSnackbarVisible] = useState(false); // Nuevo estado para Snackbar de pago
+    const [paymentSnackbarVisible, setPaymentSnackbarVisible] = useState(false);
     const navigation = useNavigation();
 
     useEffect(() => {
@@ -150,12 +150,8 @@ export const AdminScreen = () => {
                 imageUrl,
             });
         }
-        setTitle('');
-        setDescription('');
-        setPrice('');
-        setImage(null);
-        setUploading(false);
-        setCurrentPackage(null);
+        clearForm();
+        setShowModal(false);
         fetchPackages();
     };
 
@@ -220,6 +216,14 @@ export const AdminScreen = () => {
         navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: 'Main' }] }));
     };
 
+    const clearForm = () => {
+        setTitle('');
+        setDescription('');
+        setPrice('');
+        setImage(null);
+        setCurrentPackage(null);
+    };
+
     return (
         <ScrollView style={styles.rootHome}>
             <Text style={styles.title}>Admin - Gestionar Paquetes de Viaje</Text>
@@ -234,6 +238,9 @@ export const AdminScreen = () => {
                         {image && <Image source={{ uri: image }} style={styles.image} />}
                         <Button onPress={handleSubmit} mode="contained" loading={uploading} disabled={uploading}>
                             {uploading ? 'Cargando...' : 'Guardar'}
+                        </Button>
+                        <Button onPress={() => { clearForm(); setShowModal(false); }} mode="outlined" style={styles.cancelButton}>
+                            Cancelar
                         </Button>
                     </View>
                 </Modal>
@@ -301,3 +308,4 @@ export const AdminScreen = () => {
         </ScrollView>
     );
 };
+
