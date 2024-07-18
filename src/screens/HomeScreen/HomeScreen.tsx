@@ -41,6 +41,13 @@ export const HomeScreen = () => {
     const [cardNumber, setCardNumber] = useState('');
     const [purchases, setPurchases] = useState<Purchase[]>([]);
     const navigation = useNavigation();
+    const [expiryDate, setExpiryDate] = useState('');
+    const [cvc, setCvc] = useState('');
+    const [showCardErrorSnackbar, setShowCardErrorSnackbar] = useState({
+        visible: false,
+        message: '',
+        color: '#ff0000'
+    });
 
     useEffect(() => {
         fetchPackages();
@@ -84,11 +91,6 @@ export const HomeScreen = () => {
     
         setPurchases(purchasesData);
     };
-    const [showCardErrorSnackbar, setShowCardErrorSnackbar] = useState({
-        visible: false,
-        message: '',
-        color: '#ff0000'
-    });
 
     const addToCart = (pkg: TravelPackage) => {
         setCart([...cart, pkg]);
@@ -112,28 +114,79 @@ export const HomeScreen = () => {
         if (!userId) return;
     
         if (!validateCardNumber(cardNumber)) {
-            setShowCardErrorSnackbar({
-                visible: true,
-                message: 'Número de tarjeta inválido!',
-                color: '#ff0000'
-            });
+            setShowSnackbar({ visible: true, message: 'Número de tarjeta inválido!', color: '#ff0000' });
             return;
         }
     
-        const cartItems = await Promise.all(cart.map(async (pkg) => ({
+        if (!expiryDate || !cvc) {
+            setShowSnackbar({ visible: true, message: 'Completa todos los campos de la tarjeta!', color: '#ff0000' });
+            return;
+        }
+    
+        const [month, year] = expiryDate.split('/');
+        const expiryYear = parseInt(year);
+        const expiryMonth = parseInt(month);
+        const currentYear = new Date().getFullYear() % 100;
+        const currentMonth = new Date().getMonth() + 1;
+    
+        if (expiryYear < currentYear || (expiryYear === currentYear && expiryMonth < currentMonth)) {
+            setShowSnackbar({ visible: true, message: 'Fecha de expiración inválida!', color: '#ff0000' });
+            return;
+        }
+    
+        if (!/^\d{3}$/.test(cvc)) {
+            setShowSnackbar({ visible: true, message: 'CVC debe ser un número de 3 dígitos!', color: '#ff0000' });
+            return;
+        }
+    
+        const cartItem = cart[0]; // Solo se procesará el primer elemento del carrito en este ejemplo
+    
+        const timestamp = Date.now().toString(); // Obtener la marca de tiempo actual como cadena
+    
+        try {
+            const encryptedCardDetails = await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, cardNumber);
+    
+            // Guardar la compra en Firestore usando un ID único que incluye la marca de tiempo
+            await setDoc(doc(firestore, 'purchases', `${userId}_${cartItem.id}_${timestamp}`), {
+                packageId: cartItem.id,
+                userId,
+                email: userAuth?.email!,
+                price: cartItem.price,
+                encryptedCardDetails,
+                timestamp,
+            });
+    
+            // Mostrar mensaje de éxito
+            setShowSnackbar({ visible: true, message: 'Pago realizado con éxito!', color: '#2e7324' });
+    
+            // Limpiar el carrito y cerrar el modal
+            setCart([]);
+            setShowCartModal(false);
+        } catch (error) {
+            console.error('Error al procesar el pago:', error);
+            setShowSnackbar({ visible: true, message: 'Hubo un error al procesar el pago. Inténtalo de nuevo más tarde.', color: '#ff0000' });
+        }
+    };
+    
+    
+    const simulateReservation = async () => {
+        const userId = auth.currentUser?.uid;
+        if (!userId) return;
+    
+        const reservationItems = cart.map(pkg => ({
             packageId: pkg.id,
             userId,
             email: userAuth?.email!,
             price: pkg.price,
-            encryptedCardDetails: await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, cardNumber),
-        })));
+            status: 'Reservado',
+        }));
     
-        await Promise.all(cartItems.map(item => setDoc(doc(firestore, 'purchases', `${item.userId}_${item.packageId}`), item)));
+        await Promise.all(reservationItems.map(item => setDoc(doc(firestore, 'reservations', `${item.userId}_${item.packageId}`), item)));
         setCart([]);
         setShowCartModal(false);
-        setShowSnackbar({ visible: true, message: 'Pago realizado con éxito!', color: '#2e7324' });
-        fetchPurchases();
+        setShowSnackbar({ visible: true, message: 'Reserva realizada con éxito! Acércate a la oficina para cancelar.', color: '#2e7324' });
     };
+    
 
     const getAllMessages = () => {
         const dbRef = ref(dbRealTime, 'messages/' + auth.currentUser?.uid);
@@ -209,19 +262,45 @@ export const HomeScreen = () => {
                             onChangeText={setCardNumber}
                             keyboardType="numeric"
                         />
+                        <TextInput
+                            mode="outlined"
+                            label="Fecha de expiración (MM/AA)"
+                            value={expiryDate}
+                            onChangeText={setExpiryDate}
+                            placeholder="Ej: 12/25"
+                        />
+                        <TextInput
+                            mode="outlined"
+                            label="CVC"
+                            value={cvc}
+                            onChangeText={setCvc}
+                            keyboardType="numeric"
+                        />
                         <Button onPress={simulatePayment} mode="contained">Pagar</Button>
+                        <Button onPress={simulateReservation} mode="contained">Reservar</Button>
+                        <Button
+                            onPress={() => {
+                                setCart([]); 
+                                setShowCartModal(false);
+                                setShowSnackbar({ visible: true, message: 'Carrito cancelado!', color: '#ff0000' });
+                            }}
+                            mode="outlined"
+                            style={styles.cancelButton}
+                        >
+                            Cancelar
+                        </Button>
                     </View>
-                    
                 </Modal>
                 <Snackbar
                     visible={showCardErrorSnackbar.visible}
                     onDismiss={() => setShowCardErrorSnackbar({ ...showCardErrorSnackbar, visible: false })}
-                    style={{ backgroundColor: showCardErrorSnackbar.color, position: 'absolute', bottom: 50, left: 0, right: 0 }}duration={2000}>
+                    style={{ backgroundColor: showCardErrorSnackbar.color, position: 'absolute', bottom: 50, left: 0, right: 0 }}
+                    duration={2000}
+                >
                     {showCardErrorSnackbar.message}
                 </Snackbar>
             </Portal>
 
-            
             <Portal>
                 <Modal visible={showModalProfile} contentContainerStyle={styles.modal}>
                     <View style={styles.header}>

@@ -109,7 +109,10 @@ export const styles = StyleSheet.create({
         borderRadius: 8,
     },
     cardContent: {
-        // Centra el contenido de la tarjeta
+       
+    },
+    cancelButton: {
+        marginTop: 10,
     },
     cardTitle: {
         color: '#000000', 

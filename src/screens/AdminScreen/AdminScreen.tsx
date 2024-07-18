@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Image, ScrollView } from 'react-native';
-import { Button, Card, Title, Paragraph, Modal, Portal, TextInput, IconButton } from 'react-native-paper';
+import { Button, Card, Title, Paragraph, Modal, Portal, TextInput, IconButton, Snackbar } from 'react-native-paper';
 import { styles } from '../../theme/styles';
 import * as ImagePicker from 'expo-image-picker';
 import { storage, firestore, auth } from '../../configs/firebaseConfig';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, getDoc } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, getDoc, setDoc } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { CommonActions, useNavigation } from '@react-navigation/native';
 
@@ -23,7 +23,17 @@ interface Purchase {
     packageId: string;
     email: string;
     packageTitle: string;
-    price: string; // Añadido para mostrar el precio
+    price: string;
+}
+
+interface Reservation {
+    id: string;
+    userId: string;
+    packageId: string;
+    email: string;
+    packageTitle: string;
+    price: string;
+    status: string;
 }
 
 export const AdminScreen = () => {
@@ -36,11 +46,15 @@ export const AdminScreen = () => {
     const [currentPackage, setCurrentPackage] = useState<TravelPackage | null>(null);
     const [showModal, setShowModal] = useState(false);
     const [purchases, setPurchases] = useState<Purchase[]>([]);
+    const [reservations, setReservations] = useState<Reservation[]>([]);
+    const [snackbarVisible, setSnackbarVisible] = useState(false);
+    const [paymentSnackbarVisible, setPaymentSnackbarVisible] = useState(false); // Nuevo estado para Snackbar de pago
     const navigation = useNavigation();
 
     useEffect(() => {
         fetchPackages();
         fetchPurchases();
+        fetchReservations();
     }, []);
 
     const fetchPackages = async () => {
@@ -66,11 +80,33 @@ export const AdminScreen = () => {
                     packageId: purchaseData.packageId,
                     email: userDoc.data()?.email,
                     packageTitle: packageDoc.data()?.title,
-                    price: purchaseData.price, // Agregar el precio del paquete comprado
+                    price: purchaseData.price,
                 } as Purchase;
             })
         );
         setPurchases(purchasesData);
+    };
+
+    const fetchReservations = async () => {
+        const querySnapshot = await getDocs(collection(firestore, 'reservations'));
+        const reservationsData: Reservation[] = await Promise.all(
+            querySnapshot.docs.map(async (docSnap) => {
+                const reservationData = docSnap.data();
+                const userDoc = await getDoc(doc(firestore, 'users', reservationData.userId));
+                const packageDoc = await getDoc(doc(firestore, 'travelPackages', reservationData.packageId));
+
+                return {
+                    id: docSnap.id,
+                    userId: reservationData.userId,
+                    packageId: reservationData.packageId,
+                    email: userDoc.data()?.email,
+                    packageTitle: packageDoc.data()?.title,
+                    price: reservationData.price,
+                    status: reservationData.status,
+                } as Reservation;
+            })
+        );
+        setReservations(reservationsData);
     };
 
     const pickImage = async () => {
@@ -137,6 +173,48 @@ export const AdminScreen = () => {
         fetchPackages();
     };
 
+    const handlePayment = async (reservation: Reservation) => {
+        try {
+            const reservationDoc = await getDoc(doc(firestore, 'reservations', reservation.id));
+            const currentReservation = reservationDoc.data() as Reservation;
+            
+            if (currentReservation.status === 'Pagado') {
+                setPaymentSnackbarVisible(true); 
+                return;
+            }
+
+            
+            await addDoc(collection(firestore, 'purchases'), {
+                userId: reservation.userId,
+                packageId: reservation.packageId,
+                email: reservation.email,
+                packageTitle: reservation.packageTitle,
+                price: reservation.price,
+            });
+
+            
+            await updateDoc(doc(firestore, 'reservations', reservation.id), {
+                status: 'Pagado'
+            });
+
+            fetchReservations();
+            fetchPurchases();
+            setSnackbarVisible(true);
+        } catch (error) {
+            console.error("Error marcando como pagado: ", error);
+        }
+    };
+
+    const handleDeleteReservation = async (id: string) => {
+        try {
+            await deleteDoc(doc(firestore, 'reservations', id));
+            fetchReservations();
+            setSnackbarVisible(true); 
+        } catch (error) {
+            console.error("Error borrando la reserva: ", error);
+        }
+    };
+
     const handlerSignOut = async () => {
         await signOut(auth);
         navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: 'Main' }] }));
@@ -183,6 +261,19 @@ export const AdminScreen = () => {
                     <Text>Precio: {purchase.price}</Text>
                 </View>
             ))}
+
+            <Text style={styles.title}>Reservas</Text>
+            {reservations.map((reservation) => (
+                <View key={reservation.id} style={styles.card}>
+                    <Text>Usuario: {reservation.email}</Text>
+                    <Text>Título del Paquete: {reservation.packageTitle}</Text>
+                    <Text>Precio: {reservation.price}</Text>
+                    <Text>Estado: {reservation.status}</Text>
+                    <Button onPress={() => handlePayment(reservation)}>Marcar como Pagado</Button>
+                    <Button onPress={() => handleDeleteReservation(reservation.id)}>Eliminar</Button>
+                </View>
+            ))}
+
             <View style={styles.iconSignOut}>
                 <IconButton
                     icon="logout"
@@ -191,6 +282,22 @@ export const AdminScreen = () => {
                     onPress={handlerSignOut}
                 />
             </View>
+
+            <Snackbar
+                visible={snackbarVisible}
+                onDismiss={() => setSnackbarVisible(false)}
+                duration={3000}
+            >
+                Acción realizada con éxito.
+            </Snackbar>
+
+            <Snackbar
+                visible={paymentSnackbarVisible}
+                onDismiss={() => setPaymentSnackbarVisible(false)}
+                duration={3000}
+            >
+                Esta reserva ya está marcada como pagada.
+            </Snackbar>
         </ScrollView>
     );
 };
