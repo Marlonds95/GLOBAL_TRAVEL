@@ -4,7 +4,6 @@ import { Avatar, Button, Divider, IconButton, Modal, Portal, Snackbar, Card, Tit
 import { styles } from '../../theme/styles';
 import { collection, getDocs, setDoc, doc, getDoc } from 'firebase/firestore';
 import { firestore, auth, dbRealTime } from '../../configs/firebaseConfig';
-import { onValue, ref } from 'firebase/database';
 import { CommonActions, useNavigation } from '@react-navigation/native';
 import * as Crypto from 'expo-crypto';
 import firebase, { signOut, updateProfile } from 'firebase/auth';
@@ -188,14 +187,7 @@ export const HomeScreen = () => {
     };
     
 
-    const getAllMessages = () => {
-        const dbRef = ref(dbRealTime, 'messages/' + auth.currentUser?.uid);
-        onValue(dbRef, (snapshot) => {
-            const data = snapshot.val();
-            if (!data) return;
-            const getKeys = Object.keys(data);
-        });
-    };
+    
 
     const handlerSetValues = (key: string, value: string) => {
         setFormUser({ ...formUser, [key]: value });

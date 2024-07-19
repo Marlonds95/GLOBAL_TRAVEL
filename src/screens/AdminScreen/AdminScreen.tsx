@@ -226,7 +226,7 @@ export const AdminScreen = () => {
 
     return (
         <ScrollView style={styles.rootHome}>
-            <Text style={styles.title}>Admin - Gestionar Paquetes de Viaje</Text>
+            <Text style={styles.title}>Gestionar Paquetes de Viaje</Text>
             <Button mode="contained" onPress={() => setShowModal(true)}>Agregar Paquete</Button>
             <Portal>
                 <Modal visible={showModal} onDismiss={() => setShowModal(false)}>
